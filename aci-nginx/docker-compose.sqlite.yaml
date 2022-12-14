@@ -1,0 +1,53 @@
+services:
+
+  nginx:
+    image: registry.hub.docker.com/library/nginx:1.23
+    networks:
+      - server_side
+    ports:
+      - 80:80
+      - 443:443
+      - 7171:7171
+      - 1313:1313
+    volumes:
+      - nginx-conf:/etc/nginx/conf.d:ro
+    depends_on:
+      - tracker
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 0.5G
+
+  tracker:
+    image: registry.hub.docker.com/josecelano/torrust-tracker:docker
+    user: ${TORRUST_TRACKER_USER_UID:-1000}:${TORRUST_TRACKER_USER_UID:-1000}
+    tty: true
+    networks:
+      - server_side
+    ports:
+      - 6969:6969/udp
+      - 7070:7070
+      - 1212:1212
+    volumes:
+      - tracker-storage:/app/storage:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 0.5G
+
+networks:
+  server_side: {}
+
+volumes:
+  nginx-conf:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-nginx-conf
+      storage_account_name: trackerjosecelanocom
+  tracker-storage:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-tracker-storage
+      storage_account_name: trackerjosecelanocom

@@ -1,0 +1,21 @@
+services:
+
+  tracker:
+    image: registry.hub.docker.com/josecelano/torrust-tracker:docker
+    user: ${TORRUST_TRACKER_USER_UID:-1000}:${TORRUST_TRACKER_USER_UID:-1000}
+    ports:
+      - 6969:6969/udp
+      - 7070:7070
+      - 1212:1212
+    volumes:
+      - tracker-storage:/app/storage:rw
+
+networks:
+  server_side: {}
+
+volumes:
+  tracker-storage:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-tracker-storage
+      storage_account_name: trackerjosecelanocom

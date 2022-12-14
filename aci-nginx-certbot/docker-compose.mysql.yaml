@@ -1,0 +1,119 @@
+services:
+
+  nginx:
+    image: registry.hub.docker.com/library/nginx:1.23
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    domainname: "trackerjosecelanocom"
+    networks:
+      - server_side
+    ports:
+      - 80:80
+      - 443:443
+      - 7171:7171
+      - 1313:1313
+    volumes:
+      - nginx-conf:/etc/nginx/conf.d:ro
+      - letsencrypt-conf:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - tracker
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 0.5G
+
+  certbot:
+    image: registry.hub.docker.com/certbot/certbot:latest
+    volumes:
+      - letsencrypt-conf:/etc/letsencrypt:rw
+      - certbot-www:/var/www/certbot:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    depends_on:
+      - mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 0.5G
+
+  tracker:
+    image: registry.hub.docker.com/josecelano/torrust-tracker:docker
+    user: ${TORRUST_TRACKER_USER_UID:-1000}:${TORRUST_TRACKER_USER_UID:-1000}
+    tty: true
+    networks:
+      - server_side
+    ports:
+      - 6969:6969/udp
+      - 7070:7070
+      - 1212:1212
+    volumes:
+      - tracker-storage:/app/storage:rw
+    depends_on:
+      - mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 0.5G
+
+  mysql:
+    image: registry.hub.docker.com/library/mysql:8.0
+    command: '--default-authentication-plugin=mysql_native_password'
+    restart: always
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h 127.0.0.1 --password="$$(cat /run/secrets/db-password)" --silent'
+        ]
+      interval: 3s
+      retries: 5
+      start_period: 30s
+    environment:
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=root_secret_password
+      - MYSQL_DATABASE=torrust_tracker
+      - MYSQL_USER=db_user
+      - MYSQL_PASSWORD=db_user_secret_password
+    networks:
+      - server_side
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql-data:/var/lib/mysql:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 0.5G
+
+networks:
+  server_side: {}
+
+volumes:
+  nginx-conf:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-nginx-conf
+      storage_account_name: trackerjosecelanocom
+  letsencrypt-conf:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-letsencrypt-conf
+      storage_account_name: trackerjosecelanocom
+  certbot-www:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-certbot-www
+      storage_account_name: trackerjosecelanocom
+  tracker-storage:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-tracker-storage
+      storage_account_name: trackerjosecelanocom
+  mysql-data:
+    driver: azure_file
+    driver_opts:
+      share_name: tracker-josecelano-com-mysql-data
+      storage_account_name: trackerjosecelanocom
