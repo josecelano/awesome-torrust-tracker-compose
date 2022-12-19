@@ -9,6 +9,7 @@ These samples provide a starting point for how to integrate different services u
 - [Azure Container Instances only with Torrust Tracker](./aci-nginx/).
 - [Azure Container Instances with Nginx/SQLite](./aci-nginx/). WIP.
 - [Azure Container Instances with Nginx/Certbot/Mysql](./aci-nginx-certbot/). WIP.
+- [Digital Ocean Droplet with docker](./droplet-docker-context/).
 
 ## ACI notes
 
