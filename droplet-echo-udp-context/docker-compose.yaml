@@ -1,0 +1,19 @@
+services:
+  echo-udp:
+    build:
+      context: .
+    ports:
+      - 8080:8080/udp
+    networks:
+      app_net:
+        ipv4_address: 172.16.239.10
+    command: "172.16.239.10:8080"
+
+networks:
+  app_net:
+    name: upd_echo_net
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.239.0/24"
+        
